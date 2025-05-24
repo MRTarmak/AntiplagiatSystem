@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: file-storage-service
+          uri: lb://file-storage-service
+          predicates:
+            - Path=/api/files/**
+          filters:
+            - RewritePath=/api/files/(?<segment>.*), /$\{segment}
+
+        - id: file-analysis-service
+          uri: lb://file-analysis-service
+          predicates:
+            - Path=/api/analyze/**
+          filters:
+            - RewritePath=/api/analyze/(?<segment>.*), /$\{segment}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka

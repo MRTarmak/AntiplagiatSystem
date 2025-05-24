@@ -1,0 +1,6 @@
+CREATE TABLE files (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    hash VARCHAR(64) NOT NULL UNIQUE,
+    content BYTEA NOT NULL
+);
