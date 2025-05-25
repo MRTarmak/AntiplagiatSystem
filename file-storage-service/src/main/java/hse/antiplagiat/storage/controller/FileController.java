@@ -70,6 +70,7 @@ public class FileController {
     public ResponseEntity<String> getFileById(
             @Parameter(description = "UUID файла", example = "550e8400-e29b-41d4-a716-446655440000")
             @PathVariable UUID id) {
+
         FileEntity file = fileStorageService.getFileById(id);
         String content = new String(file.getContent(), StandardCharsets.UTF_8);
 
@@ -92,6 +93,7 @@ public class FileController {
     public ResponseEntity<String> getFileByHash(
             @Parameter(description = "SHA-256 хэш файла", example = "a1b2c3d4e5f67890... (минимум 64 символа)")
             @PathVariable String hash) {
+
         FileEntity file = fileStorageService.getFileByHash(hash);
         String content = new String(file.getContent(), StandardCharsets.UTF_8);
 
@@ -112,6 +114,7 @@ public class FileController {
     public ResponseEntity<Void> deleteFile(
             @Parameter(description = "UUID файла", example = "550e8400-e29b-41d4-a716-446655440000")
             @PathVariable UUID id) {
+
         fileStorageService.deleteFile(id);
 
         return ResponseEntity.noContent().build();

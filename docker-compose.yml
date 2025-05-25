@@ -1,39 +1,51 @@
+version: '3.8'
+
+networks:
+  app-network:
+    driver: bridge
+
 services:
   postgres:
     image: postgres:latest
-    container_name: file-storage-db
+    container_name: filestorage-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: file-storage
+      POSTGRES_MULTIPLE_DATABASES: file-analysis,file-storage
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - app-network
 
-#  api-gateway:
-#    build:
-#      context: ./api-gateway
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8080:8080"
-#    environment:
-#      SPRING_PROFILES_ACTIVE: docker
-#
-#  file-analysis-service:
-#    build:
-#      context: ./file-analysis-service
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8081:8081"
-#    environment:
-#      SPRING_PROFILES_ACTIVE: docker
+  file-analysis-service:
+    build:
+      context: ./file-analysis-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/file-analysis
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_FLYWAY_ENABLED: true
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_SCHEMAS: public
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
 
   file-storage-service:
     build:
@@ -46,10 +58,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/file-storage
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
+      SPRING_FLYWAY_ENABLED: true
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_SCHEMAS: public
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: public
     depends_on:
       postgres:
         condition: service_healthy
-    restart: on-failure:5
+    networks:
+      - app-network
 
 volumes:
   pgdata:

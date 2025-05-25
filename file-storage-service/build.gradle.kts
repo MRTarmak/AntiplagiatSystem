@@ -13,10 +13,12 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.postgresql:postgresql")
-    implementation("commons-io:commons-io:2.11.0")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+
+    implementation("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
+
+    implementation("commons-io:commons-io:2.11.0")
 
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

@@ -11,7 +11,7 @@ import java.sql.Types;
 import java.util.UUID;
 
 @Entity
-@Table(name = "files")
+@Table(name = "files", schema = "public")
 @Builder
 @Data
 @NoArgsConstructor
