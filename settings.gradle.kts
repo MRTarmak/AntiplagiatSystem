@@ -5,3 +5,4 @@ include(
     ":file-storage-service",
     ":file-analysis-service"
 )
+include("eureka-server")

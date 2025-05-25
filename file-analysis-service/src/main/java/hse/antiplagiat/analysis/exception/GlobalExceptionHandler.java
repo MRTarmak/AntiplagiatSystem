@@ -13,7 +13,7 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AnalysisNotFoundException.class)
-    public ResponseEntity<Object> handleFileNotFoundException(AnalysisNotFoundException ex) {
+    public ResponseEntity<Object> handleAnalysisNotFoundException(AnalysisNotFoundException ex) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", ex.getMessage());
@@ -22,7 +22,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(FileAnalysisException.class)
-    public ResponseEntity<Object> handleFileStorageException(FileAnalysisException ex) {
+    public ResponseEntity<Object> handleFileAnalysisException(FileAnalysisException ex) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());
         body.put("message", ex.getMessage());

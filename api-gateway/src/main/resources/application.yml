@@ -2,24 +2,61 @@ server:
   port: 8080
 
 spring:
-  cloud:
-    gateway:
-      routes:
-        - id: file-storage-service
-          uri: lb://file-storage-service
-          predicates:
-            - Path=/api/files/**
-          filters:
-            - RewritePath=/api/files/(?<segment>.*), /$\{segment}
-
-        - id: file-analysis-service
-          uri: lb://file-analysis-service
-          predicates:
-            - Path=/api/analyze/**
-          filters:
-            - RewritePath=/api/analyze/(?<segment>.*), /$\{segment}
+  application:
+    name: api-gateway
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: http://eureka-server:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+
+spring.cloud:
+  gateway:
+    discovery:
+      locator:
+        enabled: true
+        lower-case-service-id: true
+    routes:
+      - id: file-storage-service
+        uri: lb://file-storage-service
+        predicates:
+          - Path=/api/files/**
+      - id: file-analysis-service
+        uri: lb://file-analysis-service
+        predicates:
+          - Path=/api/analysis/**
+    globalcors:
+      corsConfigurations:
+        '[/**]':
+          allowedOrigins: "*"
+          allowedMethods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          allowedHeaders: "*"
+
+springdoc:
+  use-management-port: false
+  api-docs:
+    enabled: true
+    groups:
+      enabled: true
+  swagger-ui:
+    urls:
+      - name: file-storage-service
+        url: /file-storage-service/v3/api-docs
+      - name: file-analysis-service
+        url: /file-analysis-service/v3/api-docs
+  cache:
+    disabled: true

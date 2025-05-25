@@ -5,18 +5,25 @@ networks:
     driver: bridge
 
 services:
-  postgres:
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    ports:
+      - "8761:8761"
+    networks:
+      - app-network
+
+  postgres_storage:
     image: postgres:latest
-    container_name: filestorage-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: file-storage
-      POSTGRES_MULTIPLE_DATABASES: file-analysis,file-storage
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_storage_files:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -26,24 +33,40 @@ services:
     networks:
       - app-network
 
-  file-analysis-service:
+  postgres_analysis:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: file-analysis
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_analysis_files:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  api-gateway:
     build:
-      context: ./file-analysis-service
+      context: ./api-gateway
       dockerfile: Dockerfile
     ports:
-      - "8081:8081"
+      - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/file-analysis
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_FLYWAY_ENABLED: true
-      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
-      SPRING_FLYWAY_SCHEMAS: public
-      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: public
     depends_on:
-      postgres:
-        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      file-storage-service:
+        condition: service_started
+      file-analysis-service:
+        condition: service_started
     networks:
       - app-network
 
@@ -55,7 +78,7 @@ services:
       - "8082:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/file-storage
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_storage:5432/file-storage
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       SPRING_FLYWAY_ENABLED: true
@@ -63,10 +86,48 @@ services:
       SPRING_FLYWAY_SCHEMAS: public
       SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: public
     depends_on:
-      postgres:
+      eureka-server:
+        condition: service_started
+      postgres_storage:
         condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  file-analysis-service:
+    build:
+      context: ./file-analysis-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres_analysis:5432/file-analysis
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_FLYWAY_ENABLED: true
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_SCHEMAS: public
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: public
+    depends_on:
+      eureka-server:
+        condition: service_started
+      postgres_analysis:
+        condition: service_healthy
+      file-storage-service:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
-  pgdata:
+  postgres_storage_files:
+  postgres_analysis_files:

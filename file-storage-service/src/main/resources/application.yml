@@ -2,8 +2,12 @@ server:
   port: 8080
 
 spring:
+  application:
+    name:
+      file-storage-service
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/file-storage
+    url: jdbc:postgresql://postgres_storage:5432/file-storage
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver
@@ -19,8 +23,12 @@ spring:
     locations: classpath:db/migration
 
 springdoc:
-  swagger-ui:
-    url: /v3/api-docs/swagger-config
-    path: /swagger-ui.html
   api-docs:
-    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server:8761/eureka/
