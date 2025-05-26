@@ -6,14 +6,14 @@ import hse.antiplagiat.storage.model.FileEntity;
 import hse.antiplagiat.storage.service.FileStorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
-import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.*;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -27,31 +27,32 @@ public class FileController {
 
     @Operation(
             summary = "Загрузка файла",
-            description = "Сохраняет новый файл в хранилище (если там нет файла с таким же содержанием)" +
-                    " и возвращает id (добавленного файла или найденного).",
+            description = "Сохраняет новый текстовый файл в хранилище (если файл с таким же содержанием не существует)." +
+                    " Возвращает ID (добавленного или уже существующего файла) и флаг 'existed'. Имя файла берется из заголовков загружаемого файла.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Данные файла для загрузки. Содержимое файла должно быть в формате .txt. Имя файла будет автоматически получено из заголовков.",
+                    required = true
+            ),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Файл успешно сохранен или найден", content = {
                             @Content(
-                                    mediaType = "application/json",
+                                    mediaType = MediaType.APPLICATION_JSON_VALUE,
                                     schema = @Schema(implementation = UploadResponseDto.class),
                                     examples = {
                                             @ExampleObject(name = "existing_file", value = "{\"id\":\"a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8\", \"existed\": true}"),
                                             @ExampleObject(name = "new_file", value = "{\"id\":\"a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8\", \"existed\": false}")
                                     })
+                    }),
+                    @ApiResponse(responseCode = "400", description = "Неверный запрос (например, пустой файл или неверный тип)", content = {
+                            @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(example = "{\"message\": \"Cannot store empty file.\"}"))
                     })
             }
     )
-    @PostMapping("/upload")
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UploadResponseDto> uploadFile(
-            @Parameter(description = "Имя файла", required = true)
-            @RequestParam("name") String name,
+            @RequestPart("file") MultipartFile file) {
 
-            @Parameter(description = "Содержимое файла в виде строки", required = true)
-            @RequestParam("content") String content) {
-
-        byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
-
-        return ResponseEntity.ok(fileStorageService.storeFile(name, contentBytes));
+        return ResponseEntity.ok(fileStorageService.storeFile(file));
     }
 
     @Operation(

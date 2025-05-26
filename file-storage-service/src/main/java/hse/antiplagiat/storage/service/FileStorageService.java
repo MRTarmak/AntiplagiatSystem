@@ -7,7 +7,9 @@ import hse.antiplagiat.storage.model.FileEntity;
 import hse.antiplagiat.storage.repository.FileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
@@ -17,35 +19,50 @@ import java.util.UUID;
 public class FileStorageService {
     private final FileRepository fileRepository;
 
-    public UploadResponseDto storeFile(String name, byte[] content) {
+    public UploadResponseDto storeFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new FileStorageException("Cannot store empty file.");
+        }
+        if (!"text/plain".equals(file.getContentType())) {
+            throw new FileStorageException("Only .txt files are allowed. Received: " + file.getContentType());
+        }
+
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || fileName.trim().isEmpty()) {
+            fileName = "untitled_file_" + System.currentTimeMillis() + ".txt";
+        }
+
         try {
+            byte[] content = file.getBytes();
             String hash = calculateHash(content);
 
             if (fileRepository.existsByHash(hash)) {
-                FileEntity file = fileRepository.findByHash(hash)
-                        .orElseThrow(() -> new FileStorageException("Existing file not found by hash"));
+                FileEntity existingFile = fileRepository.findByHash(hash)
+                        .orElseThrow(() -> new FileStorageException("Existing file not found by hash after check."));
 
                 return UploadResponseDto.builder()
-                        .id(file.getId())
+                        .id(existingFile.getId())
                         .existed(true)
                         .build();
             }
 
-            FileEntity file = FileEntity.builder()
+            FileEntity newFile = FileEntity.builder()
                     .id(UUID.randomUUID())
-                    .name(name)
+                    .name(fileName)
                     .content(content)
                     .hash(hash)
                     .build();
 
-            fileRepository.save(file);
+            fileRepository.save(newFile);
 
             return UploadResponseDto.builder()
-                    .id(file.getId())
+                    .id(newFile.getId())
                     .existed(false)
                     .build();
         } catch (NoSuchAlgorithmException e) {
             throw new FileStorageException("Error calculating file hash", e);
+        } catch (IOException e) {
+            throw new FileStorageException("Error reading file content", e);
         }
     }
 
