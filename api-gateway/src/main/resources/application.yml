@@ -20,20 +20,39 @@ logging:
     org.springframework.cloud.gateway: DEBUG
 
 spring.cloud:
-  gateway:
+    gateway:
+      routes:
+        - id: file-storage-service
+          uri: lb://file-storage-service
+          predicates:
+            - Path=/api/files/**
+          filters:
+            - RewritePath=/api/files/(?<segment>.*), /${segment}
+
+        - id: file-analysis-service
+          uri: lb://file-analysis-service
+          predicates:
+            - Path=/api/analysis/**
+          filters:
+            - RewritePath=/api/analysis/(?<segment>.*), /${segment}
+
+        - id: file-storage-service-api-docs
+          uri: lb://file-storage-service
+          predicates:
+            - Path=/api/files/v3/api-docs
+          filters:
+            - RewritePath=/api/files/v3/api-docs, /v3/api-docs
+
+        - id: file-analysis-service-api-docs
+          uri: lb://file-analysis-service
+          predicates:
+            - Path=/api/analysis/v3/api-docs
+          filters:
+            - RewritePath=/api/analysis/v3/api-docs, /v3/api-docs
     discovery:
       locator:
         enabled: true
         lower-case-service-id: true
-    routes:
-      - id: file-storage-service
-        uri: lb://file-storage-service
-        predicates:
-          - Path=/api/files/**
-      - id: file-analysis-service
-        uri: lb://file-analysis-service
-        predicates:
-          - Path=/api/analysis/**
     globalcors:
       corsConfigurations:
         '[/**]':
@@ -47,6 +66,9 @@ spring.cloud:
           allowedHeaders: "*"
 
 springdoc:
+  servers:
+    - url: http://localhost:8080
+      description: API Gateway
   use-management-port: false
   api-docs:
     enabled: true
@@ -55,8 +77,8 @@ springdoc:
   swagger-ui:
     urls:
       - name: file-storage-service
-        url: /file-storage-service/v3/api-docs
+        url: /api/files/v3/api-docs
       - name: file-analysis-service
-        url: /file-analysis-service/v3/api-docs
+        url: /api/analysis/v3/api-docs
   cache:
     disabled: true

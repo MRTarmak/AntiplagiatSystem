@@ -1,5 +1,7 @@
 server:
   port: 8080
+  use-forward-headers: true
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -27,10 +29,19 @@ spring:
     schemas: public
 
 springdoc:
+  servers:
+    - url: http://localhost:8080/file-analysis-service
+      description: File Analysis Service Local
   api-docs:
     enabled: true
   swagger-ui:
     enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
 
 eureka:
   client:
