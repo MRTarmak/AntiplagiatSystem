@@ -1,4 +1,4 @@
-# Antiplagiat System
+# Text Analysis System
 
 Проект представляет собой микросервисное приложение для загрузки, хранения и анализа текстовых файлов. Система 
 разработана на базе **Spring Boot** и использует **Docker**, **Gradle (Kotlin DSL)**, **PostgreSQL**, а 
